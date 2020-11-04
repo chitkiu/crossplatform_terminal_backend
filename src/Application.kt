@@ -94,7 +94,6 @@ fun Application.module(testing: Boolean = false) {
             call.respond(response)
         }
 
-
         post("register") {
             val credentials = call.receive<UserPasswordCredential>()
             val user = userRepository.registerUser(credentials.name, credentials.password)
@@ -106,10 +105,37 @@ fun Application.module(testing: Boolean = false) {
             call.respond(response)
         }
 
-        authenticate {
-            val cloudNet = CloudNetV3ServersProvider()
+        post("validate") {
+            val authHeader = call.request.headers["Authorization"]
+            if (authHeader.isNullOrBlank()) {
+                call.respond(
+                        Success(false)
+                )
+            } else {
+                try {
+                    val jwt = authHeader.split("Bearer ")[1]
+                    if (jwt.isBlank()) {
+                        call.respond(
+                                Success(false)
+                        )
+                    } else {
+                        JwtConfig.verifier.verify(jwt)
+                        call.respond(
+                                Success(true)
+                        )
+                    }
+                } catch (e: Throwable) {
+                    call.respond(
+                            Success(false)
+                    )
+                }
+            }
+        }
 
+        authenticate {
             route("cloudnet") {
+                val cloudNet = CloudNetV3ServersProvider()
+
                 get {
                     val user = call.user!!
                     call.respond(
@@ -216,13 +242,6 @@ fun Application.module(testing: Boolean = false) {
                     )
                 }
             }
-
-            /*get("/servers") {
-                call.respond(
-                        servers.getServersListWithAuthModel(0)
-                )
-            }
-            */
         }
     }
 }

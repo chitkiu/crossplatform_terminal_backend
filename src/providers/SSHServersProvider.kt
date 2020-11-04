@@ -8,7 +8,6 @@ import backend.data.UserModel
 import backend.data.database.AuthServer
 import backend.data.database.SSHServer
 import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.*
 

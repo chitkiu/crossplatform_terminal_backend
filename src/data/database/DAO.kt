@@ -1,7 +1,5 @@
 package backend.data.database
 
-import backend.data.database.CloudNetV3.references
-import backend.data.database.SSHServer.references
 import org.jetbrains.exposed.sql.Table
 
 object Users: Table() {
