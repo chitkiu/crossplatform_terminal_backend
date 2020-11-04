@@ -12,7 +12,6 @@ class CloudNetV3ServersProvider {
 
     fun getServers(user: UserModel): List<CloudNetV3Model> {
         return transaction {
-            SchemaUtils.create(CloudNetV3)
             CloudNetV3.select {
                 CloudNetV3.userId eq user.id.toString()
             }.map {
@@ -32,7 +31,6 @@ class CloudNetV3ServersProvider {
 
     fun putServer(user: UserModel, server: CloudNetV3Model) {
         transaction {
-            SchemaUtils.create(CloudNetV3)
             CloudNetV3.insert {
                 it[id] = UUID.randomUUID().toString()
                 it[name] = server.name
@@ -49,7 +47,6 @@ class CloudNetV3ServersProvider {
 
     fun removeServer(user: UserModel, id: UUID): Success {
         return transaction {
-            SchemaUtils.create(CloudNetV3)
             val deleteCount = CloudNetV3.deleteWhere { CloudNetV3.id eq id.toString() and (CloudNetV3.userId eq user.id.toString()) }
             if(deleteCount > 0) {
                 Success(true)

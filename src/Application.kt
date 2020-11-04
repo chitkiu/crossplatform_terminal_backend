@@ -1,9 +1,11 @@
 package backend
 
 import backend.data.*
+import backend.data.database.*
 import backend.providers.AuthModelProvider
 import backend.providers.CloudNetV3ServersProvider
 import backend.providers.SSHServersProvider
+import backend.repositories.TeamRepository
 import backend.repositories.UserRepository
 import io.ktor.application.Application
 import io.ktor.application.ApplicationCall
@@ -20,7 +22,9 @@ import io.ktor.request.receive
 import io.ktor.response.respond
 import io.ktor.routing.*
 import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.TransactionManager
+import org.jetbrains.exposed.sql.transactions.transaction
 import java.sql.Connection
 import java.util.*
 
@@ -32,6 +36,10 @@ fun Application.module(testing: Boolean = false) {
     //SQLite
     Database.connect("jdbc:sqlite:./data.db", "org.sqlite.JDBC")
     TransactionManager.manager.defaultIsolationLevel = Connection.TRANSACTION_SERIALIZABLE
+    transaction {
+        SchemaUtils.create(Users, Teams, SSHServer, AuthServer, CloudNetV3)
+//        SchemaUtils.createMissingTablesAndColumns(Users, Teams, SSHServer, AuthServer, CloudNetV3)
+    }
 
     install(ContentNegotiation) {
         gson {
@@ -48,6 +56,7 @@ fun Application.module(testing: Boolean = false) {
     }
 
     val userRepository = UserRepository()
+    val teamRepository = TeamRepository()
 
     install(Authentication) {
         /**
@@ -133,6 +142,77 @@ fun Application.module(testing: Boolean = false) {
         }
 
         authenticate {
+            route("teams") {
+                post {
+                    val user = call.user!!
+                    val teamNameWrapper = call.receive<NameWrapper>()
+                    teamRepository.saveTeam(user, teamNameWrapper.name) ?: call.respond(
+                            Error("Cannot create team")
+                    )
+                }
+
+                delete("{teamId}") {
+                    val user = call.user!!
+                    call.parameters["teamId"]?.let { teamId ->
+                        try {
+                            if(teamRepository.deleteTeam(user, UUID.fromString(teamId))) {
+                                call.respond(
+                                        Success(true)
+                                )
+                            } else {
+                                call.respond(
+                                        Success(false)
+                                )
+                            }
+                        } catch (e: Throwable) {
+                            call.respond(
+                                    Success(false)
+                            )
+                        }
+                    } ?: call.respond(
+                            Success(false)
+                    )
+                }
+            }
+
+            route("team") {
+                get {
+                    val user = call.user!!
+                    teamRepository.getTeamByUser(user)?.let {
+                        call.respond(it)
+                    } ?: call.respond(Error("Team is on assign to current user"))
+                }
+
+                put {
+                    val user = call.user!!
+                    try {
+                        val teamIdWrapper = call.receive<IDWrapper>()
+                        userRepository.setTeamForUser(user, UUID.fromString(teamIdWrapper.id))
+                        call.respond(
+                                Success(true)
+                        )
+                    } catch (e: Throwable) {
+                        call.respond(
+                                Success(false)
+                        )
+                    }
+                }
+
+                delete {
+                    val user = call.user!!
+                    try {
+                        userRepository.removeTeam(user)
+                        call.respond(
+                                Success(true)
+                        )
+                    } catch (e: Throwable) {
+                        call.respond(
+                                Success(false)
+                        )
+                    }
+                }
+            }
+
             route("cloudnet") {
                 val cloudNet = CloudNetV3ServersProvider()
 
@@ -256,6 +336,14 @@ data class JWTToken(
 
 data class Error(
         val error: String
+)
+
+data class IDWrapper(
+        val id: String
+)
+
+data class NameWrapper(
+        val name: String
 )
 
 val ApplicationCall.user get() = authentication.principal<UserModel>()

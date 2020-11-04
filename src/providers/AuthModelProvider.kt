@@ -12,8 +12,6 @@ class AuthModelProvider {
 
     fun getAuths(userModel: UserModel): List<AuthModel> {
         return transaction {
-            SchemaUtils.create(AuthServer)
-
             AuthServer.select {
                 AuthServer.userId eq userModel.id.toString()
             }
@@ -23,8 +21,6 @@ class AuthModelProvider {
 
     fun putAuth(user: UserModel, authModel: AuthModel) {
         return transaction {
-            SchemaUtils.create(AuthServer)
-
             AuthServer.insert {
                 it[id] = UUID.randomUUID().toString()
                 it[name] = authModel.name
@@ -38,7 +34,6 @@ class AuthModelProvider {
 
     fun removeAuth(user: UserModel, id: UUID): Success {
         return transaction {
-            SchemaUtils.create(AuthServer)
             val deleteCount = AuthServer.deleteWhere { AuthServer.id eq id.toString() and (AuthServer.userId eq user.id.toString()) }
             if(deleteCount > 0) {
                 Success(true)

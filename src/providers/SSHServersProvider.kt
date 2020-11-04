@@ -7,7 +7,10 @@ import backend.data.ServerModelRequest
 import backend.data.UserModel
 import backend.data.database.AuthServer
 import backend.data.database.SSHServer
-import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.deleteWhere
+import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.*
 
@@ -15,8 +18,6 @@ class SSHServersProvider {
 
     fun getServers(userModel: UserModel): List<ServerModel> {
         return transaction {
-            SchemaUtils.create(SSHServer)
-
             SSHServer.select {
                 SSHServer.userId eq userModel.id.toString()
             }.map {
@@ -41,8 +42,6 @@ class SSHServersProvider {
 
     fun putServer(userModel: UserModel, server: ServerModelRequest) {
         transaction {
-            SchemaUtils.create(SSHServer)
-
             SSHServer.insert {
                 it[id] = UUID.randomUUID().toString()
                 it[name] = server.name
@@ -58,7 +57,6 @@ class SSHServersProvider {
 
     fun removeServer(user: UserModel, id: UUID): Success {
         return transaction {
-            SchemaUtils.create(SSHServer)
             val deleteCount = SSHServer.deleteWhere { SSHServer.id eq id.toString() and (SSHServer.userId eq user.id.toString()) }
             if(deleteCount > 0) {
                 Success(true)

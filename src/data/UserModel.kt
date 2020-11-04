@@ -6,5 +6,6 @@ import java.util.*
 data class UserModel(
         val id: UUID,
         val name: String,
-        val passwordHash: String
+        val passwordHash: String,
+        val teamId: UUID?
 ) : Principal
