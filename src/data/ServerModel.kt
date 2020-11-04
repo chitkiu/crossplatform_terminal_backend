@@ -9,7 +9,7 @@ data class ServerModel(
     val port: Int,
     val username: String?,
     val password: String?,
-    val auth: AuthModel? = null
+    val auth: AuthModel?
 )
 
 data class ServerModelRequest(

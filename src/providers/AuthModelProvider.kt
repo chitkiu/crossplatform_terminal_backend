@@ -1,10 +1,12 @@
 package backend.providers
 
-import backend.Success
 import backend.data.AuthModel
 import backend.data.UserModel
 import backend.data.database.AuthServer
-import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.deleteWhere
+import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.*
 
@@ -32,14 +34,9 @@ class AuthModelProvider {
         }
     }
 
-    fun removeAuth(user: UserModel, id: UUID): Success {
+    fun removeAuth(user: UserModel, id: UUID): Boolean {
         return transaction {
-            val deleteCount = AuthServer.deleteWhere { AuthServer.id eq id.toString() and (AuthServer.userId eq user.id.toString()) }
-            if(deleteCount > 0) {
-                Success(true)
-            } else {
-                Success(false)
-            }
+            AuthServer.deleteWhere { AuthServer.id eq id.toString() and (AuthServer.userId eq user.id.toString()) } > 0
         }
     }
 

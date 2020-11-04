@@ -146,8 +146,9 @@ fun Application.module(testing: Boolean = false) {
                 post {
                     val user = call.user!!
                     val teamNameWrapper = call.receive<NameWrapper>()
-                    teamRepository.saveTeam(user, teamNameWrapper.name) ?: call.respond(
-                            Error("Cannot create team")
+                    val team = teamRepository.saveTeam(user, teamNameWrapper.name)
+                    call.respond(
+                            team ?: Error("Cannot create team")
                     )
                 }
 
@@ -236,9 +237,15 @@ fun Application.module(testing: Boolean = false) {
                     val user = call.user!!
                     call.parameters["cloudNetId"]?.let { serverId ->
                         try {
-                            call.respond(
-                                cloudNet.removeServer(user, UUID.fromString(serverId))
-                            )
+                            if(cloudNet.removeServer(user, UUID.fromString(serverId))) {
+                                call.respond(
+                                        Success(true)
+                                )
+                            } else {
+                                call.respond(
+                                        Success(false)
+                                )
+                            }
                         } catch (e: Throwable) {
                             call.respond(
                                 Success(false)
@@ -273,9 +280,15 @@ fun Application.module(testing: Boolean = false) {
                     val user = call.user!!
                     call.parameters["authId"]?.let { authId ->
                         try {
-                            call.respond(
-                                    auths.removeAuth(user, UUID.fromString(authId))
-                            )
+                            if(auths.removeAuth(user, UUID.fromString(authId))) {
+                                call.respond(
+                                        Success(true)
+                                )
+                            } else {
+                                call.respond(
+                                        Success(false)
+                                )
+                            }
                         } catch (e: Throwable) {
                             call.respond(
                                     Success(false)
@@ -309,9 +322,15 @@ fun Application.module(testing: Boolean = false) {
                     val user = call.user!!
                     call.parameters["serverId"]?.let { authId ->
                         try {
-                            call.respond(
-                                    servers.removeServer(user, UUID.fromString(authId))
-                            )
+                            if(servers.removeServer(user, UUID.fromString(authId))) {
+                                call.respond(
+                                        Success(true)
+                                )
+                            } else {
+                                call.respond(
+                                        Success(false)
+                                )
+                            }
                         } catch (e: Throwable) {
                             call.respond(
                                     Success(false)

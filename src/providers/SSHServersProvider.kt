@@ -7,6 +7,8 @@ import backend.data.ServerModelRequest
 import backend.data.UserModel
 import backend.data.database.AuthServer
 import backend.data.database.SSHServer
+import backend.data.database.Teams
+import backend.data.database.Users
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
@@ -18,7 +20,7 @@ class SSHServersProvider {
 
     fun getServers(userModel: UserModel): List<ServerModel> {
         return transaction {
-            SSHServer.select {
+            val userServers = SSHServer.select {
                 SSHServer.userId eq userModel.id.toString()
             }.map {
                 val authId = it[SSHServer.authId]
@@ -29,7 +31,7 @@ class SSHServersProvider {
                         port = it[SSHServer.port],
                         username = it[SSHServer.username],
                         password = it[SSHServer.password],
-                        auth = if(authId.isNullOrEmpty())
+                        auth = if (authId.isNullOrEmpty())
                             null
                         else
                             AuthServer.select { AuthServer.id eq authId }
@@ -37,6 +39,35 @@ class SSHServersProvider {
                                     .let(AuthModel.Companion::getFromDB)
                 )
             }
+            val teamServers = userModel.teamId?.let { teamId ->
+                (Teams innerJoin Users)
+                        .slice(Teams.name, Users.id)
+                        .select {
+                            Teams.id eq teamId.toString() and (Users.teamId eq teamId.toString())
+                        }.map { resultUser ->
+                            SSHServer.select {
+                                SSHServer.userId eq resultUser[Users.id]
+                            }.map {
+                                ServerModel(
+                                        id = UUID.fromString(it[SSHServer.id]),
+                                        name = "${it[SSHServer.name]} (team: ${resultUser[Teams.name]})",
+                                        host = it[SSHServer.host],
+                                        port = it[SSHServer.port],
+                                        //Force null because we shouldn't send any auth data from other user(important data)
+                                        username = null,
+                                        password = null,
+                                        auth = null
+                                )
+                            }
+                        }
+                        .flatten()
+            } ?: emptyList()
+
+            val resultList = userServers.toMutableList()
+            teamServers
+                    .filter { !resultList.any { item -> item.id == it.id } }
+                    .let(resultList::addAll)
+            resultList
         }
     }
 
@@ -55,14 +86,9 @@ class SSHServersProvider {
         }
     }
 
-    fun removeServer(user: UserModel, id: UUID): Success {
+    fun removeServer(user: UserModel, id: UUID): Boolean {
         return transaction {
-            val deleteCount = SSHServer.deleteWhere { SSHServer.id eq id.toString() and (SSHServer.userId eq user.id.toString()) }
-            if(deleteCount > 0) {
-                Success(true)
-            } else {
-                Success(false)
-            }
+            SSHServer.deleteWhere { SSHServer.id eq id.toString() and (SSHServer.userId eq user.id.toString()) } > 0
         }
     }
 }
