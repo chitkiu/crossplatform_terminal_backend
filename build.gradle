@@ -1,18 +1,31 @@
 buildscript {
+    ext.gretty_version = '2.0.0'
+
     repositories {
         jcenter()
     }
     
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath "org.akhikhl.gretty:gretty:$gretty_version"
     }
 }
 
 apply plugin: 'kotlin'
 apply plugin: 'application'
+apply plugin: 'war'
+apply plugin: 'org.akhikhl.gretty'
+
 group 'backend'
 version '0.0.1'
 mainClassName = "io.ktor.server.jetty.EngineMain"
+
+webAppDirName = 'webapp'
+
+gretty {
+    contextPath = '/'
+    logbackConfigFile = 'resources/logback.xml'
+}
 
 sourceSets {
     main.kotlin.srcDirs = main.java.srcDirs = ['src']
@@ -44,4 +57,8 @@ dependencies {
     implementation 'org.jetbrains.exposed:exposed-core:0.28.1'
     implementation 'org.jetbrains.exposed:exposed-jdbc:0.24.1'
 
+}
+
+afterEvaluate {
+    run.dependsOn(tasks.findByName("appRun"))
 }

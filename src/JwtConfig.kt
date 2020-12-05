@@ -10,7 +10,7 @@ object JwtConfig {
 
     private val secret = System.getProperty("jwt_secret")
     private const val issuer = "ktor.io"
-    private const val validityInMs = 36_000_00 * 10 // 10 hours
+    private const val validityInMs = 36_000_00 * 24 // 1 days
     private val algorithm = Algorithm.HMAC512(secret)
 
     val verifier: JWTVerifier = JWT

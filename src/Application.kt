@@ -2,9 +2,7 @@ package backend
 
 import backend.data.*
 import backend.data.database.*
-import backend.providers.AuthModelProvider
 import backend.providers.CloudNetV3ServersProvider
-import backend.providers.SSHServersProvider
 import backend.repositories.TeamRepository
 import backend.repositories.UserRepository
 import io.ktor.application.Application
@@ -37,7 +35,7 @@ fun Application.module(testing: Boolean = false) {
     Database.connect("jdbc:sqlite:./data.db", "org.sqlite.JDBC")
     TransactionManager.manager.defaultIsolationLevel = Connection.TRANSACTION_SERIALIZABLE
     transaction {
-        SchemaUtils.create(Users, Teams, SSHServer, AuthServer, CloudNetV3)
+        SchemaUtils.create(Users, Teams, CloudNetV3)
 //        SchemaUtils.createMissingTablesAndColumns(Users, Teams, SSHServer, AuthServer, CloudNetV3)
     }
 
@@ -253,91 +251,6 @@ fun Application.module(testing: Boolean = false) {
                         }
                     } ?: call.respond(
                         Success(false)
-                    )
-                }
-            }
-
-            route("auth") {
-                val auths = AuthModelProvider()
-
-                get {
-                    val user = call.user!!
-                    call.respond(
-                            auths.getAuths(user)
-                    )
-                }
-
-                put {
-                    val user = call.user!!
-                    val authModel = call.receive<AuthModel>()
-                    auths.putAuth(user, authModel)
-                    call.respond(
-                            Success(true)
-                    )
-                }
-
-                delete("{authId}") {
-                    val user = call.user!!
-                    call.parameters["authId"]?.let { authId ->
-                        try {
-                            if(auths.removeAuth(user, UUID.fromString(authId))) {
-                                call.respond(
-                                        Success(true)
-                                )
-                            } else {
-                                call.respond(
-                                        Success(false)
-                                )
-                            }
-                        } catch (e: Throwable) {
-                            call.respond(
-                                    Success(false)
-                            )
-                        }
-                    } ?: call.respond(
-                            Success(false)
-                    )
-                }
-            }
-
-            route("sshserver") {
-                val servers = SSHServersProvider()
-                get {
-                    val user = call.user!!
-                    call.respond(
-                            servers.getServers(user)
-                    )
-                }
-
-                put {
-                    val user = call.user!!
-                    val serverModel = call.receive<ServerModelRequest>()
-                    servers.putServer(user, serverModel)
-                    call.respond(
-                            Success(true)
-                    )
-                }
-
-                delete("{serverId}") {
-                    val user = call.user!!
-                    call.parameters["serverId"]?.let { authId ->
-                        try {
-                            if(servers.removeServer(user, UUID.fromString(authId))) {
-                                call.respond(
-                                        Success(true)
-                                )
-                            } else {
-                                call.respond(
-                                        Success(false)
-                                )
-                            }
-                        } catch (e: Throwable) {
-                            call.respond(
-                                    Success(false)
-                            )
-                        }
-                    } ?: call.respond(
-                            Success(false)
                     )
                 }
             }
