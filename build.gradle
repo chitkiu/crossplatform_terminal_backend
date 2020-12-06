@@ -27,6 +27,10 @@ gretty {
     logbackConfigFile = 'resources/logback.xml'
 }
 
+war {
+    archiveName = 'ROOT.war'
+}
+
 sourceSets {
     main.kotlin.srcDirs = main.java.srcDirs = ['src']
     test.kotlin.srcDirs = test.java.srcDirs = ['test']
